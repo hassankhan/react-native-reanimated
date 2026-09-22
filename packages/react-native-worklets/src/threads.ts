@@ -1,6 +1,7 @@
 'use strict';
 
 import { IS_JEST } from './platformChecker';
+import { mockedRequestAnimationFrame } from './runLoop/uiRuntime/mockedRequestAnimationFrame';
 
 export function scheduleOnUI<Args extends unknown[], ReturnValue>(
   worklet: (...args: Args) => ReturnValue,
@@ -93,7 +94,10 @@ let offset = 0;
 function flushUIQueue(): void {
   const queue = runOnUIQueue;
   runOnUIQueue = [];
-  requestAnimationFrame(() => {
+  // NOTE(@hassankhan): SSR environments do not provide `requestAnimationFrame()`
+  const requestAnimationFrameImpl =
+    globalThis.requestAnimationFrame ?? mockedRequestAnimationFrame;
+  requestAnimationFrameImpl(() => {
     offset = 0;
     while (queue.length > offset) {
       try {
